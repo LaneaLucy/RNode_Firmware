@@ -89,7 +89,7 @@ void setup() {
   LoRa.setPins(pin_cs, pin_reset, pin_dio);
 
   #if MCU_VARIANT == MCU_ESP32
-    #if BOARD_MODEL == BOARD_TBEAM
+    #if BOARD_MODEL == BOARD_TBEAM || BOARD_MODEL == BOARD_TWATCH19
       Wire.begin(I2C_SDA, I2C_SCL);
       initPMU();
     #endif

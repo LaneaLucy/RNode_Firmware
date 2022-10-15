@@ -61,6 +61,11 @@ uint8_t boot_vector = 0x00;
 		void led_rx_off() {	digitalWrite(pin_led_rx, LOW); }
 		void led_tx_on()  { digitalWrite(pin_led_tx, LOW); }
 		void led_tx_off() { digitalWrite(pin_led_tx, HIGH); }
+	#elif BOARD_MODEL == BOARD_TWATCH19
+		void led_rx_on()  { digitalWrite(pin_led_rx, HIGH); }
+		void led_rx_off() {	digitalWrite(pin_led_rx, LOW); }
+		void led_tx_on()  { digitalWrite(pin_led_tx, LOW); }
+		void led_tx_off() { digitalWrite(pin_led_tx, HIGH); }
 	#elif BOARD_MODEL == BOARD_LORA32_V2_0
 		#if defined(EXTERNAL_LEDS)
 			void led_rx_on()  { digitalWrite(pin_led_rx, HIGH); }
@@ -383,7 +388,7 @@ int8_t  led_standby_direction = 0;
 			} else if (led_standby_value >= led_standby_max) {
 				led_standby_direction = -1;
 			}
-			led_standby_value += led_standby_direction;
+			led_standby_value += led_stBOARD_TBEAMandby_direction;
 			analogWrite(pin_led_tx, led_standby_value);
 			led_rx_off();
 		}
@@ -817,6 +822,8 @@ bool eeprom_model_valid() {
 	if (model == MODEL_FF || model == MODEL_FE) {
 	#elif BOARD_MODEL == BOARD_TBEAM
 	if (model == MODEL_E4 || model == MODEL_E9) {
+	#elif BOARD_MODEL == BOARD_TWATCH19
+	if (model == MODEL_E4 || model == MODEL_E9) {
 	#elif BOARD_MODEL == BOARD_LORA32_V2_0
 	if (model == MODEL_B3 || model == MODEL_B8) {
 	#elif BOARD_MODEL == BOARD_LORA32_V2_1
@@ -1083,14 +1090,16 @@ inline uint16_t fifo16_len(FIFOBuffer16 *f) {
   return (f->end - f->begin);
 }
 
-#if BOARD_MODEL == BOARD_TBEAM
+#if BOARD_MODEL == BOARD_TBEAM || BOARD_MODEL == BOARD_TWATCH19
 	#include <axp20x.h>
 	AXP20X_Class PMU;
 
 	bool initPMU()
 	{
 	    if (PMU.begin(Wire, AXP192_SLAVE_ADDRESS) == AXP_FAIL) {
-	        return false;
+	        if (PMU.begin(Wire, AXP202_SLAVE_ADDRESS) == AXP_FAIL) {
+	          return false;
+	    }
 	    }
 	    /*
 	     * The charging indicator can be turned on or off
@@ -1111,26 +1120,54 @@ inline uint16_t fifo16_len(FIFOBuffer16 *f) {
 	     *   Turn off unused power sources to save power
 	     * **/
 
-	    PMU.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);
+#if BOARD_MODEL == BOARD_TWATCH19
+
+	    PMU.setPowerOutPut(AXP202_DCDC2, AXP202_OFF);
+	    PMU.setPowerOutPut(AXP202_LDO2, AXP202_OFF);
+	    PMU.setPowerOutPut(AXP202_LDO3, AXP202_OFF);
+	    PMU.setPowerOutPut(AXP202_LDO4, AXP202_OFF);
+	    PMU.setPowerOutPut(AXP202_EXTEN, AXP202_OFF);
+
+#else
+
+      PMU.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);
 	    PMU.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);
 	    PMU.setPowerOutPut(AXP192_LDO2, AXP202_OFF);
 	    PMU.setPowerOutPut(AXP192_LDO3, AXP202_OFF);
 	    PMU.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);
 
+#endif
+
+	    
+
 	    /*
-	     * Set the power of LoRa and GPS module to 3.3V
+	     * Set the power of LoRa (and GPS module) to 3.3V
 	     **/
-	    PMU.setLDO2Voltage(3300);   //LoRa VDD
-	    PMU.setLDO3Voltage(3300);   //GPS  VDD
+	    PMU.setLDO2Voltage(3300);   //LoRa VDD on TBEAM/Backlight on TWATCH19
+	    PMU.setLDO3Voltage(3300);   //GPS  VDD on TBEAM/LoRa VDD on TWATCH19
+
+
+#if BOARD_MODEL == BOARD_TWATCH19
+
+	    // Turn on Backlight
+	    PMU.setPowerOutPut(AXP202_LDO2, AXP202_ON);
+
+	    // Turn on SX1276
+	    PMU.setPowerOutPut(AXP202_LDO3, AXP202_ON);
+
+#else
+
 	    PMU.setDCDC1Voltage(3300);  //3.3V Pin next to 21 and 22 is controlled by DCDC1
 
-	    PMU.setPowerOutPut(AXP192_DCDC1, AXP202_ON);
+      PMU.setPowerOutPut(AXP192_DCDC1, AXP202_ON);
 
 	    // Turn on SX1276
 	    PMU.setPowerOutPut(AXP192_LDO2, AXP202_ON);
 
 	    // Turn off GPS
 	    PMU.setPowerOutPut(AXP192_LDO3, AXP202_OFF);
+
+#endif
 
 	    pinMode(PMU_IRQ, INPUT_PULLUP);
 	    attachInterrupt(PMU_IRQ, [] {
@@ -1154,10 +1191,20 @@ inline uint16_t fifo16_len(FIFOBuffer16 *f) {
 	}
 
 	void disablePeripherals()
-	{
-	    PMU.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);
+	{    
+#if BOARD_MODEL == BOARD_TWATCH19
+
 	    PMU.setPowerOutPut(AXP192_LDO2, AXP202_OFF);
 	    PMU.setPowerOutPut(AXP192_LDO3, AXP202_OFF);
+
+#else
+
+      PMU.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);
+	    PMU.setPowerOutPut(AXP192_LDO2, AXP202_OFF);
+	    PMU.setPowerOutPut(AXP192_LDO3, AXP202_OFF);
+
+#endif
+	    
 	}
 
 #endif

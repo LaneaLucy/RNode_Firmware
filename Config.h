@@ -21,6 +21,7 @@
 	#define BOARD_LORA32_V2_0   0x36
 	#define BOARD_LORA32_V2_1   0x37
 	#define BOARD_HELTEC32_V2   0x38
+	#define BOARD_TWATCH19      0x39
 	#define BOARD_RNODE_NG_20   0x40
 	#define BOARD_RNODE_NG_21   0x41
 
@@ -88,7 +89,7 @@
 		// If you are not using make to compile this
 		// firmware, you can manually define model here.
 		//
-		// #define BOARD_MODEL BOARD_GENERIC_ESP32
+    //#define BOARD_MODEL BOARD_TWATCH19
 
 		#if BOARD_MODEL == BOARD_GENERIC_ESP32
 			const int pin_cs = 4;
@@ -102,6 +103,12 @@
 			const int pin_dio = 26;
 			const int pin_led_rx = 2;
 			const int pin_led_tx = 4;
+		#elif BOARD_MODEL == BOARD_TWATCH19
+			const int pin_cs = 18;
+			const int pin_reset = 23;
+			const int pin_dio = 26;
+			const int pin_led_rx = 25;
+			const int pin_led_tx = 25;
 		#elif BOARD_MODEL == BOARD_HUZZAH32
 			const int pin_cs = 4;
 			const int pin_reset = 36;
@@ -180,6 +187,12 @@
 	#endif
 
 	#if BOARD_MODEL == BOARD_TBEAM
+		#define I2C_SDA 21
+		#define I2C_SCL 22
+		#define PMU_IRQ 35
+	#endif
+
+	#if BOARD_MODEL == BOARD_TWATCH19
 		#define I2C_SDA 21
 		#define I2C_SCL 22
 		#define PMU_IRQ 35
