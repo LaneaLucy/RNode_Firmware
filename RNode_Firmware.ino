@@ -24,6 +24,20 @@
 #include <SPI.h>
 #include "Utilities.h"
 
+#if BOARD_MODEL == BOARD_TBEAM
+  #include <Wire.h>
+  #include <Adafruit_GFX.h>
+  #include <Adafruit_SSD1306.h>
+  //#include <Fonts/FreeMono9pt7b.h>
+
+  #define SCREEN_WIDTH 128     // OLED display width, in pixels
+  #define SCREEN_HEIGHT 32     // OLED display height, in pixels
+  #define OLED_RESET -1        // Reset pin # (or -1 if sharing Arduino reset pin)
+  #define SCREEN_ADDRESS 0x3C  ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+  Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+#endif
+
+
 
 
 FIFOBuffer serialFIFO;
@@ -49,12 +63,85 @@ char sbuf[128];
   bool packet_ready = false;
 #endif
 
+
+void display_show() {
+
+#if BOARD_MODEL == BOARD_TBEAM
+  // A simple clear screen will flash a bit
+  display.clearDisplay();
+  //display.setFont(&FreeMono9pt7b);
+  display.setTextSize(1);               // Normal 1:1 pixel scale
+  display.setTextColor(SSD1306_WHITE);  // Draw white text
+  display.setCursor(0, 0);              // Start at top-left corner
+  display.print("VBUS: ");
+  // You can use isVBUSPlug to check whether the USB connection is normal
+  if (PMU.isVBUSPlug()) {
+    //display.println("CONNECT");
+    // Get USB voltage
+    //display.print("VBUS Voltage:");
+    display.print(PMU.getVbusVoltage());
+    display.println(" mV");
+    // Get USB current
+    display.print("Current: ");
+    display.print(PMU.getVbusCurrent());
+    display.println(" mA");
+  } else {
+
+    //display.setTextColor(TFT_RED, TFT_BLACK);
+    display.println("DISCONNECTED");
+    //display.setTextColor(TFT_GREEN, TFT_BLACK);
+  }
+
+  // display.println();
+
+  display.print("BAT: ");
+  // You can use isBatteryConnect() to check whether the battery is connected properly
+  if (PMU.isBatteryConnect()) {
+    //display.print("CONNECTED ");
+
+    // Get battery voltage
+    //display.print("BAT V:");
+    display.print(PMU.getBattVoltage());
+    display.println(" mV");
+
+    // To display the charging status, you must first discharge the battery,
+    // and it is impossible to read the full charge when it is fully charged
+    if (PMU.isChargeing()) {
+      display.print("Charge:");
+      display.print(PMU.getBattChargeCurrent());
+      display.println(" mA");
+    } else {
+      // Show current consumption
+      display.print("Discharge:");
+      display.print(PMU.getBattDischargeCurrent());
+      display.println(" mA");
+      //display.print("Per: ");
+      //display.print(PMU.getBattPercentage());
+      //display.println(" %");
+    }
+  } else {
+    //display.setTextColor(TFT_RED, TFT_BLACK);
+    display.println("DISCONNECTED");
+    //display.setTextColor(TFT_GREEN, TFT_BLACK);
+  }
+  display.display();
+#endif
+}
+
 void setup() {
   #if MCU_VARIANT == MCU_ESP32
     delay(500);
     EEPROM.begin(EEPROM_SIZE);
     Serial.setRxBufferSize(CONFIG_UART_BUFFER_SIZE);
   #endif
+  
+  pinMode(I2C_SCL, OUTPUT);
+  
+  digitalWrite(pin_led_tx, HIGH);
+  delay(500);
+  digitalWrite(pin_led_tx, LOW);
+  delay(500);
+  
 
   // Seed the PRNG
   randomSeed(analogRead(0));
@@ -92,6 +179,11 @@ void setup() {
     #if BOARD_MODEL == BOARD_TBEAM || BOARD_MODEL == BOARD_TWATCH19
       Wire.begin(I2C_SDA, I2C_SCL);
       initPMU();
+      if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+        Serial.println(F("SSD1306 allocation failed"));
+      //  //  //for(;;); // Don't proceed, loop forever
+      }
+    display.display();
     #endif
 
     kiss_indicate_reset();
@@ -734,6 +826,16 @@ void validateStatus() {
 }
 
 void loop() {
+  if (millis() - last_display_update >= 3000) {
+    last_display_update = millis();
+    display_show();
+    //Serial.println("");
+    //Serial.println("LoRa.modemStatus()");
+    //Serial.println(LoRa.modemStatus());
+    //Serial.println("LoRa.getFrequency()");
+    //Serial.println(LoRa.getFrequency());
+    //Serial.println("");
+  }
   if (radio_online) {
     checkModemStatus();
 

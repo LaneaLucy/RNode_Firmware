@@ -388,7 +388,7 @@ int8_t  led_standby_direction = 0;
 			} else if (led_standby_value >= led_standby_max) {
 				led_standby_direction = -1;
 			}
-			led_standby_value += led_stBOARD_TBEAMandby_direction;
+			led_standby_value += led_standby_direction;
 			analogWrite(pin_led_tx, led_standby_value);
 			led_rx_off();
 		}
@@ -1097,14 +1097,13 @@ inline uint16_t fifo16_len(FIFOBuffer16 *f) {
 	bool initPMU()
 	{
 	    if (PMU.begin(Wire, AXP192_SLAVE_ADDRESS) == AXP_FAIL) {
-	        if (PMU.begin(Wire, AXP202_SLAVE_ADDRESS) == AXP_FAIL) {
-	          return false;
-	    }
+                Serial.println("PMU init failed");
+	        return false;
 	    }
 	    /*
 	     * The charging indicator can be turned on or off
 	     * * * */
-	    PMU.setChgLEDMode(AXP20X_LED_OFF);
+//	    PMU.setChgLEDMode(AXP20X_LED_OFF);
 
 	    /*
 	    * The default ESP32 power supply has been turned on,
@@ -1119,7 +1118,7 @@ inline uint16_t fifo16_len(FIFOBuffer16 *f) {
 	    /*
 	     *   Turn off unused power sources to save power
 	     * **/
-
+/*
 #if BOARD_MODEL == BOARD_TWATCH19
 
 	    PMU.setPowerOutPut(AXP202_DCDC2, AXP202_OFF);
@@ -1130,14 +1129,14 @@ inline uint16_t fifo16_len(FIFOBuffer16 *f) {
 
 #else
 
-      PMU.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);
+            PMU.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);
 	    PMU.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);
 	    PMU.setPowerOutPut(AXP192_LDO2, AXP202_OFF);
 	    PMU.setPowerOutPut(AXP192_LDO3, AXP202_OFF);
 	    PMU.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);
 
 #endif
-
+**/
 	    
 
 	    /*
@@ -1146,7 +1145,7 @@ inline uint16_t fifo16_len(FIFOBuffer16 *f) {
 	    PMU.setLDO2Voltage(3300);   //LoRa VDD on TBEAM/Backlight on TWATCH19
 	    PMU.setLDO3Voltage(3300);   //GPS  VDD on TBEAM/LoRa VDD on TWATCH19
 
-
+/*
 #if BOARD_MODEL == BOARD_TWATCH19
 
 	    // Turn on Backlight
@@ -1159,7 +1158,7 @@ inline uint16_t fifo16_len(FIFOBuffer16 *f) {
 
 	    PMU.setDCDC1Voltage(3300);  //3.3V Pin next to 21 and 22 is controlled by DCDC1
 
-      PMU.setPowerOutPut(AXP192_DCDC1, AXP202_ON);
+            PMU.setPowerOutPut(AXP192_DCDC1, AXP202_ON);
 
 	    // Turn on SX1276
 	    PMU.setPowerOutPut(AXP192_LDO2, AXP202_ON);
@@ -1168,11 +1167,12 @@ inline uint16_t fifo16_len(FIFOBuffer16 *f) {
 	    PMU.setPowerOutPut(AXP192_LDO3, AXP202_OFF);
 
 #endif
+**/
 
-	    pinMode(PMU_IRQ, INPUT_PULLUP);
-	    attachInterrupt(PMU_IRQ, [] {
+	    //pinMode(PMU_IRQ, INPUT_PULLUP);
+	    //attachInterrupt(PMU_IRQ, [] {
 	        // pmu_irq = true;
-	    }, FALLING);
+	    //}, FALLING);
 
 	    PMU.adc1Enable(AXP202_VBUS_VOL_ADC1 |
 	                   AXP202_VBUS_CUR_ADC1 |
@@ -1180,12 +1180,12 @@ inline uint16_t fifo16_len(FIFOBuffer16 *f) {
 	                   AXP202_BATT_VOL_ADC1,
 	                   AXP202_ON);
 
-	    PMU.enableIRQ(AXP202_VBUS_REMOVED_IRQ |
-	                  AXP202_VBUS_CONNECT_IRQ |
-	                  AXP202_BATT_REMOVED_IRQ |
-	                  AXP202_BATT_CONNECT_IRQ,
-	                  AXP202_ON);
-	    PMU.clearIRQ();
+	    //PMU.enableIRQ(AXP202_VBUS_REMOVED_IRQ |
+	    //              AXP202_VBUS_CONNECT_IRQ |
+	    //              AXP202_BATT_REMOVED_IRQ |
+	    //              AXP202_BATT_CONNECT_IRQ,
+	    //              AXP202_ON);
+	    //PMU.clearIRQ();
 
 	    return true;
 	}
@@ -1199,9 +1199,9 @@ inline uint16_t fifo16_len(FIFOBuffer16 *f) {
 
 #else
 
-      PMU.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);
-	    PMU.setPowerOutPut(AXP192_LDO2, AXP202_OFF);
-	    PMU.setPowerOutPut(AXP192_LDO3, AXP202_OFF);
+      //PMU.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);
+	    //PMU.setPowerOutPut(AXP192_LDO2, AXP202_OFF);
+	    //PMU.setPowerOutPut(AXP192_LDO3, AXP202_OFF);
 
 #endif
 	    

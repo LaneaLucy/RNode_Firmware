@@ -256,6 +256,7 @@
 
 	uint32_t status_interval_ms = 3;
 	uint32_t last_status_update = 0;
+	uint32_t last_display_update = 0;
 
 	// Status flags
 	const uint8_t SIG_DETECT = 0x01;
