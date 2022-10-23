@@ -11,7 +11,7 @@
 	//Manuelle definition des Bluetooth feature.
 	//If the device name is defined here, a Bluetooth connection is used instead of Serial.
 	//Currently Bluetooth and Serial cannot be used at the same time.
-	//#define SERIAL_BT "RNodeBT"
+	#define SERIAL_BT "RNodeBT"
 
 	#define MAJ_VERS  0x01
 	#define MIN_VERS  0x1E

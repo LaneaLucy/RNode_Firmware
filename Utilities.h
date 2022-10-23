@@ -28,6 +28,9 @@
     #endif
     BluetoothSerial SerialBT;
     #define SERIAL SerialBT
+    boolean confirmRequestPending = false;
+    uint32_t time_since_Request = 0;
+    uint32_t numVal = 0;
   #else
     #define SERIAL Serial
   #endif

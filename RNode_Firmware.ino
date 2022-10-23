@@ -67,12 +67,20 @@ char sbuf[128];
 void display_show() {
 
 #if BOARD_MODEL == BOARD_TBEAM
+  
   // A simple clear screen will flash a bit
   display.clearDisplay();
   //display.setFont(&FreeMono9pt7b);
   display.setTextSize(1);               // Normal 1:1 pixel scale
   display.setTextColor(SSD1306_WHITE);  // Draw white text
   display.setCursor(0, 0);              // Start at top-left corner
+#ifdef SERIAL_BT  
+  if (confirmRequestPending) {
+    display.print("PIN: ");
+    display.println(numVal);
+    display.println("Press middle Button to accept. you have 10 sec");
+  }
+#endif
   display.print("VBUS: ");
   // You can use isVBUSPlug to check whether the USB connection is normal
   if (PMU.isVBUSPlug()) {
@@ -156,6 +164,8 @@ void setup() {
 
   //SebastianObi
   #ifdef SERIAL_BT
+    pinMode(38, INPUT);
+    Serial.begin(serial_baudrate);
     SERIAL.enableSSP();
     SERIAL.onConfirmRequest(serial_bt_confirm_request_callback);
     SERIAL.register_callback(serial_bt_callback);
@@ -212,7 +222,12 @@ void setup() {
 #ifdef SERIAL_BT
   void serial_bt_confirm_request_callback(uint32_t num_val) {
       //Worakround to deny any devices expect the Reticulum linux system
-      SERIAL.confirmReply(false);
+      //SERIAL.confirmReply(false);
+      Serial.println(num_val);
+      numVal = num_val;
+      time_since_Request = millis();
+      confirmRequestPending = true;
+      display_show();
   }
 
   void serial_bt_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) {
@@ -827,12 +842,8 @@ void validateStatus() {
   } else if (boot_flags & (1<<F_WDR)) {
     boot_vector = START_FROM_BOOTLOADER;
   } else {
-    //SebastianObi
-    #ifndef SERIAL_BT
-      SERIAL.write("Error, indeterminate boot vector\r\n");
-    #endif
-    //SebastianObi
-      led_indicate_boot_error();
+    Serial.write("Error, indeterminate boot vector\r\n");
+    led_indicate_boot_error();
   }
 
   if (boot_vector == START_FROM_BOOTLOADER || boot_vector == START_FROM_POWERON) {
@@ -855,16 +866,25 @@ void validateStatus() {
     }
   } else {
     hw_ready = false;
-    //SebastianObi
-    #ifndef SERIAL_BT
-      SERIAL.write("Error, incorrect boot vector\r\n");
-    #endif
-    //SebastianObi
+    Serial.write("Error, incorrect boot vector\r\n");
     led_indicate_boot_error();
   }
 }
 
 void loop() {
+#ifdef SERIAL_BT
+  if (confirmRequestPending) { 
+    if (!digitalRead(38)) {
+      confirmRequestPending = false;
+      SERIAL.confirmReply(true);
+      display_show();
+    } else if (millis() - time_since_Request >= 10000) {
+      confirmRequestPending = false;
+      SERIAL.confirmReply(false);
+      display_show();
+    }
+  }
+#endif
   if (millis() - last_display_update >= 3000) {
     last_display_update = millis();
     display_show();
