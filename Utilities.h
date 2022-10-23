@@ -18,6 +18,25 @@
 	#include <util/atomic.h>
 #endif
 
+
+//SebastianObi
+#if MCU_VARIANT == MCU_ESP32
+  #ifdef SERIAL_BT
+    #include "BluetoothSerial.h"
+    #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+        #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+    #endif
+    BluetoothSerial SerialBT;
+    #define SERIAL SerialBT
+  #else
+    #define SERIAL Serial
+  #endif
+#else
+  #define SERIAL Serial
+  #undef SERIAL_BT
+#endif
+//SebastianObi
+
 uint8_t boot_vector = 0x00;
 
 #if MCU_VARIANT == MCU_1284P || MCU_VARIANT == MCU_2560
@@ -440,188 +459,188 @@ int8_t  led_standby_direction = 0;
 #endif
 
 void escapedSerialWrite(uint8_t byte) {
-	if (byte == FEND) { Serial.write(FESC); byte = TFEND; }
-    if (byte == FESC) { Serial.write(FESC); byte = TFESC; }
-    Serial.write(byte);
+	if (byte == FEND) { SERIAL.write(FESC); byte = TFEND; }
+    if (byte == FESC) { SERIAL.write(FESC); byte = TFESC; }
+    SERIAL.write(byte);
 }
 
 void kiss_indicate_reset() {
-	Serial.write(FEND);
-	Serial.write(CMD_RESET);
-	Serial.write(CMD_RESET_BYTE);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_RESET);
+	SERIAL.write(CMD_RESET_BYTE);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_error(uint8_t error_code) {
-	Serial.write(FEND);
-	Serial.write(CMD_ERROR);
-	Serial.write(error_code);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_ERROR);
+	SERIAL.write(error_code);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_radiostate() {
-	Serial.write(FEND);
-	Serial.write(CMD_RADIO_STATE);
-	Serial.write(radio_online);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_RADIO_STATE);
+	SERIAL.write(radio_online);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_stat_rx() {
-	Serial.write(FEND);
-	Serial.write(CMD_STAT_RX);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_STAT_RX);
 	escapedSerialWrite(stat_rx>>24);
 	escapedSerialWrite(stat_rx>>16);
 	escapedSerialWrite(stat_rx>>8);
 	escapedSerialWrite(stat_rx);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_stat_tx() {
-	Serial.write(FEND);
-	Serial.write(CMD_STAT_TX);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_STAT_TX);
 	escapedSerialWrite(stat_tx>>24);
 	escapedSerialWrite(stat_tx>>16);
 	escapedSerialWrite(stat_tx>>8);
 	escapedSerialWrite(stat_tx);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_stat_rssi() {
 	uint8_t packet_rssi_val = (uint8_t)(last_rssi+rssi_offset);
-	Serial.write(FEND);
-	Serial.write(CMD_STAT_RSSI);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_STAT_RSSI);
 	escapedSerialWrite(packet_rssi_val);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_stat_snr() {
-	Serial.write(FEND);
-	Serial.write(CMD_STAT_SNR);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_STAT_SNR);
 	escapedSerialWrite(last_snr_raw);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_radio_lock() {
-	Serial.write(FEND);
-	Serial.write(CMD_RADIO_LOCK);
-	Serial.write(radio_locked);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_RADIO_LOCK);
+	SERIAL.write(radio_locked);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_spreadingfactor() {
-	Serial.write(FEND);
-	Serial.write(CMD_SF);
-	Serial.write((uint8_t)lora_sf);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_SF);
+	SERIAL.write((uint8_t)lora_sf);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_codingrate() {
-	Serial.write(FEND);
-	Serial.write(CMD_CR);
-	Serial.write((uint8_t)lora_cr);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_CR);
+	SERIAL.write((uint8_t)lora_cr);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_implicit_length() {
-	Serial.write(FEND);
-	Serial.write(CMD_IMPLICIT);
-	Serial.write(implicit_l);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_IMPLICIT);
+	SERIAL.write(implicit_l);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_txpower() {
-	Serial.write(FEND);
-	Serial.write(CMD_TXPOWER);
-	Serial.write((uint8_t)lora_txp);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_TXPOWER);
+	SERIAL.write((uint8_t)lora_txp);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_bandwidth() {
-	Serial.write(FEND);
-	Serial.write(CMD_BANDWIDTH);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_BANDWIDTH);
 	escapedSerialWrite(lora_bw>>24);
 	escapedSerialWrite(lora_bw>>16);
 	escapedSerialWrite(lora_bw>>8);
 	escapedSerialWrite(lora_bw);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_frequency() {
-	Serial.write(FEND);
-	Serial.write(CMD_FREQUENCY);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_FREQUENCY);
 	escapedSerialWrite(lora_freq>>24);
 	escapedSerialWrite(lora_freq>>16);
 	escapedSerialWrite(lora_freq>>8);
 	escapedSerialWrite(lora_freq);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_random(uint8_t byte) {
-	Serial.write(FEND);
-	Serial.write(CMD_RANDOM);
-	Serial.write(byte);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_RANDOM);
+	SERIAL.write(byte);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_ready() {
-	Serial.write(FEND);
-	Serial.write(CMD_READY);
-	Serial.write(0x01);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_READY);
+	SERIAL.write(0x01);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_not_ready() {
-	Serial.write(FEND);
-	Serial.write(CMD_READY);
-	Serial.write(0x00);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_READY);
+	SERIAL.write(0x00);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_promisc() {
-	Serial.write(FEND);
-	Serial.write(CMD_PROMISC);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_PROMISC);
 	if (promisc) {
-		Serial.write(0x01);
+		SERIAL.write(0x01);
 	} else {
-		Serial.write(0x00);
+		SERIAL.write(0x00);
 	}
-	Serial.write(FEND);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_detect() {
-	Serial.write(FEND);
-	Serial.write(CMD_DETECT);
-	Serial.write(DETECT_RESP);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_DETECT);
+	SERIAL.write(DETECT_RESP);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_version() {
-	Serial.write(FEND);
-	Serial.write(CMD_FW_VERSION);
-	Serial.write(MAJ_VERS);
-	Serial.write(MIN_VERS);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_FW_VERSION);
+	SERIAL.write(MAJ_VERS);
+	SERIAL.write(MIN_VERS);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_platform() {
-	Serial.write(FEND);
-	Serial.write(CMD_PLATFORM);
-	Serial.write(PLATFORM);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_PLATFORM);
+	SERIAL.write(PLATFORM);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_board() {
-	Serial.write(FEND);
-	Serial.write(CMD_BOARD);
-	Serial.write(BOARD_MODEL);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_BOARD);
+	SERIAL.write(BOARD_MODEL);
+	SERIAL.write(FEND);
 }
 
 void kiss_indicate_mcu() {
-	Serial.write(FEND);
-	Serial.write(CMD_MCU);
-	Serial.write(MCU_VARIANT);
-	Serial.write(FEND);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_MCU);
+	SERIAL.write(MCU_VARIANT);
+	SERIAL.write(FEND);
 }
 
 inline bool isSplitPacket(uint8_t header) {
@@ -748,10 +767,10 @@ void eeprom_dump_all() {
 }
 
 void kiss_dump_eeprom() {
-	Serial.write(FEND);
-	Serial.write(CMD_ROM_READ);
+	SERIAL.write(FEND);
+	SERIAL.write(CMD_ROM_READ);
 	eeprom_dump_all();
-	Serial.write(FEND);
+	SERIAL.write(FEND);
 }
 
 void eeprom_update(int mapped_addr, uint8_t byte) {
