@@ -132,7 +132,11 @@ void setup() {
   #if MCU_VARIANT == MCU_ESP32
     delay(500);
     EEPROM.begin(EEPROM_SIZE);
-    Serial.setRxBufferSize(CONFIG_UART_BUFFER_SIZE);
+  //SebastianObi
+  #ifndef SERIAL_BT
+    SERIAL.setRxBufferSize(CONFIG_UART_BUFFER_SIZE);
+  #endif
+  //SebastianObi
   #endif
   
   pinMode(I2C_SCL, OUTPUT);
@@ -150,8 +154,19 @@ void setup() {
   memset(serialBuffer, 0, sizeof(serialBuffer));
   fifo_init(&serialFIFO, serialBuffer, CONFIG_UART_BUFFER_SIZE);
 
-  Serial.begin(serial_baudrate);
-  while (!Serial);
+  //SebastianObi
+  #ifdef SERIAL_BT
+    SERIAL.enableSSP();
+    SERIAL.onConfirmRequest(serial_bt_confirm_request_callback);
+    SERIAL.register_callback(serial_bt_callback);
+    if (!SERIAL.begin(SERIAL_BT)) {
+      hard_reset();
+    }
+  #else
+    SERIAL.begin(serial_baudrate);
+    while (!SERIAL);
+  #endif
+  //SebastianObi
 
   serial_interrupt_init();
 
@@ -193,6 +208,22 @@ void setup() {
   validateStatus();
 }
 
+//SebastianObi
+#ifdef SERIAL_BT
+  void serial_bt_confirm_request_callback(uint32_t num_val) {
+      //Worakround to deny any devices expect the Reticulum linux system
+      SERIAL.confirmReply(false);
+  }
+
+  void serial_bt_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) {
+    //Client disconnected -> Reset MCU
+    if (event == ESP_SPP_CLOSE_EVT ) {
+      hard_reset();
+    }
+  }
+#endif
+//SebastianObi
+
 void lora_receive() {
   if (!implicit) {
     LoRa.receive();
@@ -202,15 +233,15 @@ void lora_receive() {
 }
 
 inline void kiss_write_packet() {
-  Serial.write(FEND);
-  Serial.write(CMD_DATA);
+  SERIAL.write(FEND);
+  SERIAL.write(CMD_DATA);
   for (uint16_t i = 0; i < read_len; i++) {
     uint8_t byte = pbuf[i];
-    if (byte == FEND) { Serial.write(FESC); byte = TFEND; }
-    if (byte == FESC) { Serial.write(FESC); byte = TFESC; }
-    Serial.write(byte);
+    if (byte == FEND) { SERIAL.write(FESC); byte = TFEND; }
+    if (byte == FESC) { SERIAL.write(FESC); byte = TFESC; }
+    SERIAL.write(byte);
   }
-  Serial.write(FEND);
+  SERIAL.write(FEND);
   read_len = 0;
   #if MCU_VARIANT == MCU_ESP32
     packet_ready = false;
@@ -796,7 +827,11 @@ void validateStatus() {
   } else if (boot_flags & (1<<F_WDR)) {
     boot_vector = START_FROM_BOOTLOADER;
   } else {
-      Serial.write("Error, indeterminate boot vector\r\n");
+    //SebastianObi
+    #ifndef SERIAL_BT
+      SERIAL.write("Error, indeterminate boot vector\r\n");
+    #endif
+    //SebastianObi
       led_indicate_boot_error();
   }
 
@@ -820,7 +855,11 @@ void validateStatus() {
     }
   } else {
     hw_ready = false;
-    Serial.write("Error, incorrect boot vector\r\n");
+    //SebastianObi
+    #ifndef SERIAL_BT
+      SERIAL.write("Error, incorrect boot vector\r\n");
+    #endif
+    //SebastianObi
     led_indicate_boot_error();
   }
 }
@@ -913,16 +952,16 @@ void buffer_serial() {
     serial_buffering = true;
 
     uint8_t c = 0;
-    while (c < MAX_CYCLES && Serial.available()) {
+    while (c < MAX_CYCLES && SERIAL.available()) {
       c++;
 
       #if MCU_VARIANT != MCU_ESP32
         if (!fifo_isfull_locked(&serialFIFO)) {
-          fifo_push_locked(&serialFIFO, Serial.read());
+          fifo_push_locked(&serialFIFO, SERIAL.read());
         }
       #else
         if (!fifo_isfull(&serialFIFO)) {
-          fifo_push(&serialFIFO, Serial.read());
+          fifo_push(&serialFIFO, SERIAL.read());
         }
       #endif
     }

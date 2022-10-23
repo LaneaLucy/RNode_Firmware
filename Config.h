@@ -3,11 +3,21 @@
 #ifndef CONFIG_H
 	#define CONFIG_H
 
+	//SebastianObi
+	//Manual definition of the board type for compilation with Arduion IDE. //SebastianObi
+	//#define BOARD_MODEL 0x37
+
+	//SebastianObi
+	//Manuelle definition des Bluetooth feature.
+	//If the device name is defined here, a Bluetooth connection is used instead of Serial.
+	//Currently Bluetooth and Serial cannot be used at the same time.
+	//#define SERIAL_BT "RNodeBT"
+
 	#define MAJ_VERS  0x01
 	#define MIN_VERS  0x1E
 
 	#define PLATFORM_AVR   0x90
-    #define PLATFORM_ESP32 0x80
+	#define PLATFORM_ESP32 0x80
 
 	#define MCU_1284P 0x91
 	#define MCU_2560  0x92
